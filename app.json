@@ -1,12 +1,9 @@
 {
-  "name": "Start on Heroku: Go",
-  "description": "Go Getting Started Example App",
+  "name": "s.fud.pw",
+  "description": "URL Shortener for fud.pwd",
   "keywords": [
-    "getting-started",
-    "go",
-    "sample",
-    "example"
+    "s.fud.pw"
   ],
-  "website": "http://github.com/heroku/go-getting-started",
-  "repository": "http://github.com/heroku/go-getting-started"
+  "website": "http://s.fud.pw/",
+  "repository": "http://github.com/billm/s.fud.pw"
 }
