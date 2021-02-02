@@ -24,7 +24,7 @@ func shorten(db *sql.DB, url string) string {
 		return err.Error()
 	}
 
-	if _, err := db.Exec("INSERT INTO slugs VALUES (slug, url)"); err != nil {
+	if _, err := db.Exec("INSERT INTO slugs VALUES ($1, $2)", slug, url); err != nil {
 		return err.Error()
 	}
 
