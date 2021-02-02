@@ -54,7 +54,7 @@ func main() {
 	router.GET("/r/:slug", func(c *gin.Context) {
 		//c.Redirect(http.StatusMovedPermanently, "http://www.google.com/")
 
-		rows, err := db.Query("SELECT url FROM slugs WHERE slug = ?", c.Param("slug"))
+		rows, err := db.Query("SELECT url FROM slugs WHERE slug = $1", c.Param("slug"))
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, err.Error())
 			return
