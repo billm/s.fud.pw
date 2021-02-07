@@ -15,8 +15,12 @@
     <div class="col-md-6">
       <form>
         <div class="form-group">
-          <label for="url">URL</label>
-          <input type="text" class="form-control" name="url" placeholder="Enter URL to shorten">
+          <label for="gurl">Good URL</label>
+          <input type="text" class="form-control" name="gurl" placeholder="Enter good URL">
+          <input type="text" class="form-control" name="gcount" placeholder="# good clicks before bad">
+          <label for="burl">Bad URL</label>
+          <input type="text" class="form-control" name="burl" placeholder="Enter bad URL">
+          <input type="text" class="form-control" name="bcount" placeholder="# bad clicks before all good">
         </div>
         <button type="submit" class="btn-btn-primary">Submit</button>
       </form>
@@ -34,7 +38,10 @@
 $().ready(function(){
   $('form').submit(function(event){
     var formData = {
-      'url': $('input[name=url]').val()
+      'gurl': $('input[name=gurl]').val(),
+      'burl': $('input[name=burl]').val(),
+      'gcount': $('input[name=gcount]').val(),
+      'bcount': $('input[name=bcount]').val()
     };
 
     // POST new url
