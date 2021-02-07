@@ -14,15 +14,27 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// Initialize database
+var db = initDb()
+
+func initDb() *sql.DB {
+	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
+	if err != nil {
+		log.Fatalf("Error opening database: %q", err)
+	}
+
+	if _, err := db.Exec("CREATE TABLE IF NOT EXISTS slugs (slug varchar, url varchar)"); err != nil {
+		log.Fatal(err.Error())
+	}
+
+	return db
+}
+
 func shorten(db *sql.DB, url string) string {
 
 	hasher := md5.New()
 	hasher.Write([]byte(url))
 	slug := hex.EncodeToString(hasher.Sum(nil))[0:7]
-
-	if _, err := db.Exec("CREATE TABLE IF NOT EXISTS slugs (slug varchar, url varchar)"); err != nil {
-		return err.Error()
-	}
 
 	if _, err := db.Exec("INSERT INTO slugs VALUES ($1, $2)", slug, url); err != nil {
 		return err.Error()
@@ -31,16 +43,41 @@ func shorten(db *sql.DB, url string) string {
 	return slug
 }
 
+func handleNewSlug(c *gin.Context) {
+	slug := shorten(db, c.PostForm("url"))
+
+	c.JSON(http.StatusOK, gin.H{"slug": slug})
+}
+
+func handleGetSlug(c *gin.Context) {
+	//c.Redirect(http.StatusMovedPermanently, "http://www.google.com/")
+
+	rows, err := db.Query("SELECT url FROM slugs WHERE slug = $1", c.Param("slug"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			url string
+		)
+		if err := rows.Scan(&url); err != nil {
+			c.JSON(http.StatusInternalServerError, err.Error())
+			return
+		}
+		c.Redirect(http.StatusTemporaryRedirect, url)
+		return
+	}
+
+}
+
 func main() {
 	port := os.Getenv("PORT")
 
 	if port == "" {
 		log.Fatal("$PORT must be set")
-	}
-
-	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
-	if err != nil {
-		log.Fatalf("Error opening database: %q", err)
 	}
 
 	router := gin.New()
@@ -51,38 +88,13 @@ func main() {
 	router.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.tmpl.html", nil)
 	})
-	router.GET("/r/:slug", func(c *gin.Context) {
-		//c.Redirect(http.StatusMovedPermanently, "http://www.google.com/")
+	router.GET("/r/:slug", handleGetSlug)
 
-		rows, err := db.Query("SELECT url FROM slugs WHERE slug = $1", c.Param("slug"))
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, err.Error())
-			return
-		}
-		defer rows.Close()
-
-		for rows.Next() {
-			var (
-				url string
-			)
-			if err := rows.Scan(&url); err != nil {
-				c.JSON(http.StatusInternalServerError, err.Error())
-				return
-			}
-			c.Redirect(http.StatusTemporaryRedirect, url)
-			return
-		}
-
-	})
 	router.PUT("/edit/:slug", func(c *gin.Context) {
 		//c.Redirect(http.StatusMovedPermanently, "http://www.google.com/")
 		c.JSON(http.StatusOK, gin.H{"slug": c.Param("slug")})
 	})
-	router.POST("/new", func(c *gin.Context) {
-		slug := shorten(db, c.PostForm("url"))
-
-		c.JSON(http.StatusOK, gin.H{"slug": slug})
-	})
+	router.POST("/new", handleNewSlug)
 
 	router.Run(":" + port)
 }
