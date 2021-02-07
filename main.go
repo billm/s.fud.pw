@@ -23,7 +23,15 @@ func initDb() *sql.DB {
 		log.Fatalf("Error opening database: %q", err)
 	}
 
-	if _, err := db.Exec("CREATE TABLE IF NOT EXISTS slugs (slug varchar, url varchar)"); err != nil {
+	if _, err := db.Exec("CREATE TABLE IF NOT EXISTS slugs ( " +
+		"slug varchar (8) NOT NULL UNIQUE, " +
+		"gurl varchar NOT NULL, " +
+		"gcount int NOT NULL DEFAULT 0, " +
+		"burl varchar, " +
+		"bcount int NOT NULL DEFAULT 0, " +
+		"created_at timestamp NOT NULL DEFAULT NOW(), " +
+		"expires_at timestamp NOT NULL DEFAULT NOW() + interval '10 years'" +
+		")"); err != nil {
 		log.Fatal(err.Error())
 	}
 
@@ -34,9 +42,9 @@ func shorten(db *sql.DB, url string) string {
 
 	hasher := md5.New()
 	hasher.Write([]byte(url))
-	slug := hex.EncodeToString(hasher.Sum(nil))[0:7]
+	slug := hex.EncodeToString(hasher.Sum(nil))[0:8]
 
-	if _, err := db.Exec("INSERT INTO slugs VALUES ($1, $2)", slug, url); err != nil {
+	if _, err := db.Exec("INSERT INTO slugs(slug, gurl) VALUES ($1, $2)", slug, url); err != nil {
 		return err.Error()
 	}
 
@@ -52,7 +60,7 @@ func handleNewSlug(c *gin.Context) {
 func handleGetSlug(c *gin.Context) {
 	//c.Redirect(http.StatusMovedPermanently, "http://www.google.com/")
 
-	rows, err := db.Query("SELECT url FROM slugs WHERE slug = $1", c.Param("slug"))
+	rows, err := db.Query("SELECT gurl FROM slugs WHERE slug = $1", c.Param("slug"))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return
