@@ -1,3 +1,5 @@
+NOTE - there is much security missing from this code, you probably don't want to use it :) 
+
 
 # s.fud.pw
 
